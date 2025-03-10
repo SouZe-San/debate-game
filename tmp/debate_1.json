@@ -1,33 +1,20 @@
 {
     "game_id": 1,
-    "player_1": "DebateMasterX",
-    "player_2": "LogicWarrior",
+    "player_1": "Debater1",
+    "player_2": "Debater2",
     "topic": "Should AI replace human judges?",
     "arguments": [
         {
-            "player": "DebateMasterX",
-            "argument": "AI systems can analyze legal precedents and case details with perfect recall and consistency, eliminating human biases that often affect judgments. They can process vast amounts of data quickly, ensuring that all relevant information is considered. AI judges would apply the law uniformly across similar cases, addressing the issue of sentencing disparities that plague our current system."
+            "player": "Debater1",
+            "round": 1,
+            "argument": "AI judges are more objective."
         },
         {
-            "player": "LogicWarrior",
-            "argument": "Justice requires understanding human context and nuance that AI cannot grasp. Judges must weigh complex ethical considerations, show compassion, and understand unspoken cultural contexts. While AI may appear unbiased, it inherits biases from its training data and lacks the critical human ability to recognize when established precedent should be challenged for moral progress in society."
+            "player": "Debater2",
+            "round": 1,
+            "argument": "Human judges understand context better."
         }
     ],
-    "winner": "LogicWarrior",
-    "scores": {
-        "DebateMasterX": {
-            "logic": 8.0,
-            "relevance": 9.0,
-            "persuasiveness": 7.5,
-            "total": 24.5
-        },
-        "LogicWarrior": {
-            "logic": 8.0,
-            "relevance": 9.0,
-            "persuasiveness": 8.0,
-            "total": 25.0
-        }
-    },
-    "reason": "LogicWarrior scored higher in persuasiveness, which is crucial in a debate setting. Both players had the same scores for logic and relevance, but the slight edge in persuasiveness for LogicWarrior contributed to a higher overall score, making them the winner.",
-    "timestamp": "2025-03-10 06:23:12.817797"
+    "winner": "Debater1",
+    "timestamp": "2025-03-10 06:50:34.108792"
 }

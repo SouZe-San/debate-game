@@ -66,6 +66,34 @@ def get_debate_history(game_id):
     except Exception as e:
         print(f"[ERROR] Could not retrieve debate history: {str(e)}")
         return None
+    
+# Function to list all objects in a bucket
+
+
+def list_bucket_contents(bucket_name=BUCKET_NAME):
+    try:
+        # List all objects in the bucket
+        objects = minio_client.list_objects(bucket_name, recursive=True)
+
+        print(f"\nContents of bucket '{bucket_name}':")
+        print("-" * 50)
+
+        # Iterate through objects and print details
+        found = False
+        for obj in objects:
+            found = True
+            print(f"Object: {obj.object_name}")
+            print(f"Size: {obj.size} bytes")
+            print(f"Last Modified: {obj.last_modified}")
+            print("-" * 50)
+
+        if not found:
+            print("Bucket is empty.")
+
+        return objects
+    except Exception as e:
+        print(f"[ERROR] Could not list bucket contents: {str(e)}")
+        return None
 
 # Example usage
 if __name__ == "__main__":
@@ -82,4 +110,4 @@ if __name__ == "__main__":
 
     # Retrieve and print debate history
     history = get_debate_history(1)
-    print("\nRetrieved Debate History:", json.dumps(history, indent=4))
+    print(list_bucket_contents())
