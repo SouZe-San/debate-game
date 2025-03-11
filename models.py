@@ -30,5 +30,8 @@ class JoinRoom(BaseModel):
     player_name: str
 
 
+class TopicResponse(BaseModel):
+    topics: List[str]
+
 class Argument(BaseModel):
     argument: str
