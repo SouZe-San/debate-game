@@ -9,8 +9,8 @@ import random
 
 # Load API Key from .env
 load_dotenv()
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-API_URL = "https://openrouter.ai/api/v1/chat/completions"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 # MinIO Configuration
 MINIO_ENDPOINT = "localhost:9000"
@@ -47,26 +47,24 @@ def print_full_response(response, label="API Response"):
 
 def generate_debate_topic():
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://debate-app.example.com"
+        "Content-Type": "application/json"
     }
 
     payload = {
-        "model": "openai/gpt-4o-mini",
-        "messages": [
-            {
-                "role": "user",
-                "content": "Generate an interesting and controversial debate topic."
-            }
-        ],
-        "temperature": 0.9
+        "contents": [{
+            "parts": [{
+                "text": "Generate an interesting and controversial debate topic."
+            }]
+        }]
     }
 
     try:
-        response = requests.post(API_URL, headers=headers, json=payload)
+        response = requests.post(f"{API_URL}?key={GEMINI_API_KEY}",
+                                 headers=headers,
+                                 json=payload)
         if response.status_code == 200:
-            topic = response.json()["choices"][0]["message"]["content"].strip()
+            topic = response.json()[
+                "candidates"][0]["content"]["parts"][0]["text"].strip()
             return topic
     except Exception as e:
         print(f"Error generating topic: {e}")
@@ -84,9 +82,7 @@ def generate_debate_topic():
 
 def score_argument_turn(argument, topic, turn_number):
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://debate-app.example.com"
+        "Content-Type": "application/json"
     }
 
     prompt = f"""
@@ -97,19 +93,28 @@ def score_argument_turn(argument, topic, turn_number):
 
     Topic: {topic}
     Argument: {argument}
+
+    Respond with only the numerical scores in this format:
+    Logic: [score]
+    Relevance: [score]
+    Persuasiveness: [score]
     """
 
     payload = {
-        "model": "openai/gpt-4o-mini",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.7
+        "contents": [{
+            "parts": [{
+                "text": prompt
+            }]
+        }]
     }
 
     try:
-        response = requests.post(API_URL, headers=headers, json=payload)
+        response = requests.post(f"{API_URL}?key={GEMINI_API_KEY}",
+                                 headers=headers,
+                                 json=payload)
         if response.status_code == 200:
-            # Parse the response to extract scores
-            content = response.json()["choices"][0]["message"]["content"]
+            content = response.json(
+            )["candidates"][0]["content"]["parts"][0]["text"]
             scores = {
                 "logic": float(re.search(r"Logic.*?(\d+(?:\.\d+)?)", content).group(1)),
                 "relevance": float(re.search(r"Relevance.*?(\d+(?:\.\d+)?)", content).group(1)),
