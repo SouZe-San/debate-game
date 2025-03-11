@@ -1,11 +1,10 @@
-# main.py
 from fastapi import FastAPI, HTTPException
-from models import Room, JoinRoom, Argument, Player
+from models import Room, JoinRoom, Argument, Player, TopicResponse
 from player_service import PlayerService
 import os
 from dotenv import load_dotenv
 from minio import Minio
-from ai_engine import run_debate
+from ai_engine import run_debate, generate_debate_topics_by_genre
 import random
 import string
 import json
@@ -21,6 +20,16 @@ MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "sayan")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "admin123")
 MINIO_BUCKET = "debate-history"
+
+# Valid genres for debate topics
+VALID_GENRES = [
+    "sports",
+    "cinema",
+    "philosophy",
+    "music",
+    "geopolitics",
+    "brainrot"
+]
 
 # Initialize MinIO client
 minio_client = Minio(
@@ -45,33 +54,43 @@ def generate_room_key(length: int = 6) -> str:
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 
-@app.post("/players/create/{username}")
-async def create_player(username: str):
-    """Create a new player profile"""
-    player = await player_service.create_player(username)
-    return {"message": "Player created successfully", "player": player}
+@app.get("/topics/{genre}", response_model=TopicResponse)
+async def get_debate_topics(genre: str):
+    """Get three debate topics for a specific genre"""
+    if genre.lower() not in VALID_GENRES:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "Invalid genre",
+                "valid_genres": VALID_GENRES
+            }
+        )
 
-
-@app.get("/players/{username}")
-async def get_player_profile(username: str):
-    """Get player profile"""
-    player = await player_service.get_player(username)
-    if not player:
-        raise HTTPException(status_code=404, detail="Player not found")
-    return player
+    topics = generate_debate_topics_by_genre(genre)
+    return topics
 
 
 @app.post("/create-room/{player_name}")
-async def create_room(player_name: str):
-    """Create a new debate room"""
+async def create_room(player_name: str, genre: str = None):
+    """Create a new debate room with optional genre-specific topic"""
     # Verify player exists
     player = await player_service.get_player(player_name)
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
 
     room_key = generate_room_key()
-    debate_result = run_debate()
-    topic = debate_result["topic"]
+
+    # Generate topic based on genre if provided
+    if genre:
+        if genre.lower() not in VALID_GENRES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid genre. Valid genres are: {', '.join(VALID_GENRES)}"
+            )
+        topics = generate_debate_topics_by_genre(genre)
+        topic = random.choice(topics["topics"])
+    else:
+        topic = run_debate()["topic"]
 
     room = Room(
         room_key=room_key,

@@ -45,6 +45,83 @@ def print_full_response(response, label="API Response"):
     print("-------------------\n")
 
 
+def generate_debate_topics_by_genre(genre: str) -> dict:
+    """
+    Generate 3 debate topics for a specific genre using Gemini API
+    """
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    prompt = f"""
+    Generate exactly 3 interesting and controversial debate topics related to {genre}.
+    The topics should be thought-provoking and suitable for a structured debate.
+    Each topic should be a complete question or statement.
+    Provide only the 3 topics without any additional text or numbering.
+    """
+
+    payload = {
+        "contents": [{
+            "parts": [{
+                "text": prompt
+            }]
+        }]
+    }
+
+    try:
+        response = requests.post(
+            f"{API_URL}?key={GEMINI_API_KEY}",
+            headers=headers,
+            json=payload
+        )
+
+        if response.status_code == 200:
+            content = response.json(
+            )["candidates"][0]["content"]["parts"][0]["text"]
+            topics = [topic.strip()
+                      for topic in content.split('\n') if topic.strip()][:3]
+            return {"topics": topics}
+
+    except Exception as e:
+        print(f"Error generating topics: {e}")
+
+    # Fallback topics based on genres
+    fallback_topics = {
+        "sports": [
+            "Should esports be included in the Olympics?",
+            "Should college athletes be paid?",
+            "Is VAR improving or ruining football?"
+        ],
+        "cinema": [
+            "Are superhero movies ruining cinema?",
+            "Should streaming platforms release all episodes at once?",
+            "Are remakes necessary in modern cinema?"
+        ],
+        "philosophy": [
+            "Does free will exist?",
+            "Is morality objective or subjective?",
+            "Can artificial intelligence be conscious?"
+        ],
+        "music": [
+            "Is streaming helping or hurting musicians?",
+            "Has auto-tune ruined modern music?",
+            "Should music education be mandatory in schools?"
+        ],
+        "geopolitics": [
+            "Should the UN Security Council be reformed?",
+            "Is economic globalization beneficial for all countries?",
+            "Should nuclear weapons be globally banned?"
+        ],
+        "brainrot": [
+            "Is cereal a soup?",
+            "Do hot dogs qualify as sandwiches?",
+            "Should pineapple be allowed on pizza?"
+        ]
+    }
+
+    return {"topics": fallback_topics.get(genre.lower(), fallback_topics["brainrot"])}
+
+
 def generate_debate_topic():
     headers = {
         "Content-Type": "application/json"
@@ -78,7 +155,6 @@ def generate_debate_topic():
         "Should college education be free?"
     ]
     return random.choice(fallback_topics)
-
 
 def score_argument_turn(argument, topic, turn_number):
     headers = {
