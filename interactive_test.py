@@ -6,15 +6,57 @@ app = typer.Typer()
 
 BASE_URL = "http://127.0.0.1:8000"  # Change if hosted elsewhere
 
+# Valid genres list
+VALID_GENRES = [
+    "sports",
+    "cinema",
+    "philosophy",
+    "music",
+    "geopolitics",
+    "brainrot"
+]
+
 
 @app.command()
 def start_debate():
     """
-    Start a new debate by providing topic, player names, and five arguments each.
+    Start a new debate by selecting genre, topic, player names, and five arguments each.
     """
     typer.echo("Enter debate details:")
 
-    topic = typer.prompt("Debate Topic")
+    # Genre selection
+    typer.echo("\nAvailable genres:")
+    for i, genre in enumerate(VALID_GENRES, 1):
+        typer.echo(f"{i}. {genre}")
+
+    genre_choice = typer.prompt("Select genre (1-6)")
+    try:
+        selected_genre = VALID_GENRES[int(genre_choice) - 1]
+    except (ValueError, IndexError):
+        typer.echo(
+            "Invalid genre selection. Please select a number between 1 and 6.")
+        return
+
+    # Fetch topics for selected genre
+    response = requests.get(f"{BASE_URL}/topics/{selected_genre}")
+    if response.status_code != 200:
+        typer.echo(f"Error fetching topics: {response.text}")
+        return
+
+    topics = response.json()["topics"]
+
+    # Topic selection
+    typer.echo("\nAvailable topics:")
+    for i, topic in enumerate(topics, 1):
+        typer.echo(f"{i}. {topic}")
+
+    topic_choice = typer.prompt("Select topic (1-3)")
+    try:
+        selected_topic = topics[int(topic_choice) - 1]
+    except (ValueError, IndexError):
+        typer.echo(
+            "Invalid topic selection. Please select a number between 1 and 3.")
+        return
 
     # Player 1 Details
     player1_name = typer.prompt("Player 1 Name")
@@ -35,7 +77,7 @@ def start_debate():
     game_id = typer.prompt("Game ID", type=int)
 
     payload = {
-        "topic": topic,
+        "topic": selected_topic,
         "player1_name": player1_name,
         "player1_arguments": [player1_arg1, player1_arg2, player1_arg3, player1_arg4, player1_arg5],
         "player2_name": player2_name,
@@ -50,7 +92,6 @@ def start_debate():
         typer.echo(json.dumps(response.json(), indent=4))
     else:
         typer.echo(f"\nError: {response.status_code} - {response.text}")
-
 
 
 @app.command()
