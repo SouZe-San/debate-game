@@ -70,18 +70,6 @@ async def get_debate_topics(genre: str):
     return topics
 
 
-@app.post("/register")
-async def register_player(username: str):
-    """Register a new player"""
-    try:
-        player = await player_service.create_player(username)
-        return {"message": f"Player {username} registered successfully", "player": player}
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @app.post("/create-room/{player_name}")
 async def create_room(player_name: str, genre: str = None):
     """Create a new debate room with optional genre-specific topic"""

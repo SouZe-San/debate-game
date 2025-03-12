@@ -26,14 +26,13 @@ def check_player_exists(username: str) -> bool:
 
 
 @app.command()
-@app.command()
 def register_player():
     """Register a new player"""
     username = typer.prompt("Enter username")
 
-    # Use the correct registration endpoint
-    response = requests.post(f"{BASE_URL}/register",
-                             params={"username": username})
+    # Use the players/create endpoint instead
+    response = requests.post(f"{BASE_URL}/players/create",
+                             params={"player_name": username})
 
     if response.status_code == 200:
         typer.echo(f"Player {username} registered successfully!")
