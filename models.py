@@ -12,6 +12,11 @@ class Player(BaseModel):
     losses: int = 0
     created_at: datetime = datetime.now()
 
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
 
 class Room(BaseModel):
     room_key: str
