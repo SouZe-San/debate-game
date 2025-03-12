@@ -1,4 +1,3 @@
-# player_service.py
 import json
 from typing import Optional
 from models import Player
@@ -17,9 +16,10 @@ class PlayerService:
                 self.bucket_name,
                 f"player_{username}.json"
             )
-            player_data = json.loads(response.data.decode('utf-8'))
+            data = response.read()  # Properly read the MinIO response
+            player_data = json.loads(data.decode('utf-8'))
             return Player(**player_data)
-        except:
+        except Exception as e:
             return None
 
     async def create_player(self, username: str) -> Player:
@@ -32,7 +32,8 @@ class PlayerService:
         return player
 
     async def save_player(self, player: Player):
-        player_data = json.dumps(player.dict()).encode('utf-8')
+        # Use json() method for proper serialization
+        player_data = player.json().encode('utf-8')
         self.minio_client.put_object(
             self.bucket_name,
             f"player_{player.username}.json",
