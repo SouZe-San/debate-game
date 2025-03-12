@@ -4,9 +4,8 @@ import json
 
 app = typer.Typer()
 
-BASE_URL = "http://127.0.0.1:8000"  # Change if hosted elsewhere
+BASE_URL = "http://127.0.0.1:8000"
 
-# Valid genres list
 VALID_GENRES = [
     "sports",
     "cinema",
@@ -17,12 +16,47 @@ VALID_GENRES = [
 ]
 
 
+def check_player_exists(username: str) -> bool:
+    """Check if a player exists in the system"""
+    try:
+        response = requests.get(f"{BASE_URL}/room-status/player_{username}")
+        return response.status_code == 200
+    except:
+        return False
+
+
+@app.command()
+@app.command()
+def register_player():
+    """Register a new player"""
+    username = typer.prompt("Enter username")
+
+    # Use the correct registration endpoint
+    response = requests.post(f"{BASE_URL}/register",
+                             params={"username": username})
+
+    if response.status_code == 200:
+        typer.echo(f"Player {username} registered successfully!")
+        return True
+    else:
+        typer.echo(f"Error registering player: {response.text}")
+        return False
+
+
 @app.command()
 def start_debate():
-    """
-    Start a new debate by selecting genre, topic, player names, and five arguments each.
-    """
-    typer.echo("Enter debate details:")
+    """Start a new debate with player registration and invitation code"""
+    typer.echo("Welcome to Debate Game!")
+
+    # Player 1 Registration/Login
+    player1_name = typer.prompt("Enter Player 1 username")
+    if not check_player_exists(player1_name):
+        if typer.confirm("Player not found. Would you like to register?"):
+            if not register_player():
+                return
+        else:
+            typer.echo("Cannot proceed without registration")
+            return
 
     # Genre selection
     typer.echo("\nAvailable genres:")
@@ -37,77 +71,94 @@ def start_debate():
             "Invalid genre selection. Please select a number between 1 and 6.")
         return
 
-    # Fetch topics for selected genre
-    response = requests.get(f"{BASE_URL}/topics/{selected_genre}")
+    # Create room and get invitation code
+    response = requests.post(
+        f"{BASE_URL}/create-room/{player1_name}", params={"genre": selected_genre})
     if response.status_code != 200:
-        typer.echo(f"Error fetching topics: {response.text}")
+        typer.echo(f"Error creating room: {response.text}")
         return
 
-    topics = response.json()["topics"]
+    room_data = response.json()
+    room_key = room_data["room_key"]
+    topic = room_data["topic"]
 
-    # Topic selection
-    typer.echo("\nAvailable topics:")
-    for i, topic in enumerate(topics, 1):
-        typer.echo(f"{i}. {topic}")
+    typer.echo(f"\nRoom created successfully!")
+    typer.echo(f"Topic: {topic}")
+    typer.echo(f"\nShare this invitation code with Player 2: {room_key}")
+    typer.echo("\nWaiting for Player 2 to join...")
 
-    topic_choice = typer.prompt("Select topic (1-3)")
-    try:
-        selected_topic = topics[int(topic_choice) - 1]
-    except (ValueError, IndexError):
-        typer.echo(
-            "Invalid topic selection. Please select a number between 1 and 3.")
+    # Player 2 Registration/Login
+    player2_name = typer.prompt("Enter Player 2 username")
+    if not check_player_exists(player2_name):
+        if typer.confirm("Player not found. Would you like to register?"):
+            if not register_player():
+                return
+        else:
+            typer.echo("Cannot proceed without registration")
+            return
+
+    # Join room
+    join_payload = {"player_name": player2_name}
+    response = requests.post(
+        f"{BASE_URL}/join-room/{room_key}", json=join_payload)
+    if response.status_code != 200:
+        typer.echo(f"Error joining room: {response.text}")
         return
 
-    # Player 1 Details
-    player1_name = typer.prompt("Player 1 Name")
-    player1_arg1 = typer.prompt("Player 1 Argument 1")
-    player1_arg2 = typer.prompt("Player 1 Argument 2")
-    player1_arg3 = typer.prompt("Player 1 Argument 3")
-    player1_arg4 = typer.prompt("Player 1 Argument 4")
-    player1_arg5 = typer.prompt("Player 1 Argument 5")
+    typer.echo("\nBoth players joined! Starting debate...")
 
-    # Player 2 Details
-    player2_name = typer.prompt("Player 2 Name")
-    player2_arg1 = typer.prompt("Player 2 Argument 1")
-    player2_arg2 = typer.prompt("Player 2 Argument 2")
-    player2_arg3 = typer.prompt("Player 2 Argument 3")
-    player2_arg4 = typer.prompt("Player 2 Argument 4")
-    player2_arg5 = typer.prompt("Player 2 Argument 5")
+    # Submit arguments alternately
+    for round_num in range(1, 6):
+        # Player 1's turn
+        arg = typer.prompt(f"Player 1 ({player1_name}) Argument {round_num}")
+        payload = {"argument": arg}
+        response = requests.post(
+            f"{BASE_URL}/submit-argument/{room_key}/{player1_name}", json=payload)
+        if response.status_code != 200:
+            typer.echo(f"Error submitting argument: {response.text}")
+            return
 
-    game_id = typer.prompt("Game ID", type=int)
+        # Player 2's turn
+        arg = typer.prompt(f"Player 2 ({player2_name}) Argument {round_num}")
+        payload = {"argument": arg}
+        response = requests.post(
+            f"{BASE_URL}/submit-argument/{room_key}/{player2_name}", json=payload)
+        if response.status_code != 200:
+            typer.echo(f"Error submitting argument: {response.text}")
+            return
 
-    payload = {
-        "topic": selected_topic,
-        "player1_name": player1_name,
-        "player1_arguments": [player1_arg1, player1_arg2, player1_arg3, player1_arg4, player1_arg5],
-        "player2_name": player2_name,
-        "player2_arguments": [player2_arg1, player2_arg2, player2_arg3, player2_arg4, player2_arg5],
-        "game_id": game_id
-    }
-
-    response = requests.post(f"{BASE_URL}/debate/", json=payload)
-
-    if response.status_code == 200:
-        typer.echo("\nDebate Results:")
-        typer.echo(json.dumps(response.json(), indent=4))
-    else:
-        typer.echo(f"\nError: {response.status_code} - {response.text}")
+        result = response.json()
+        if result.get("status") == "completed":
+            typer.echo("\nDebate Results:")
+            typer.echo(json.dumps(result["result"], indent=4))
+            return
 
 
 @app.command()
-def get_debate():
-    """
-    Retrieve a debate result using its ID.
-    """
-    debate_id = typer.prompt("Enter Debate ID", type=int)
+def join_debate():
+    """Join an existing debate using invitation code"""
+    room_key = typer.prompt("Enter invitation code")
 
-    response = requests.get(f"{BASE_URL}/debate/{debate_id}")
+    # Player Registration/Login
+    username = typer.prompt("Enter your username")
+    if not check_player_exists(username):
+        if typer.confirm("Player not found. Would you like to register?"):
+            if not register_player():
+                return
+        else:
+            typer.echo("Cannot proceed without registration")
+            return
 
-    if response.status_code == 200:
-        typer.echo("\nDebate Result:")
-        typer.echo(json.dumps(response.json(), indent=4))
-    else:
-        typer.echo(f"\nError: {response.status_code} - {response.text}")
+    # Join room
+    join_payload = {"player_name": username}
+    response = requests.post(
+        f"{BASE_URL}/join-room/{room_key}", json=join_payload)
+    if response.status_code != 200:
+        typer.echo(f"Error joining room: {response.text}")
+        return
+
+    typer.echo("Successfully joined the debate!")
+    return response.json()
 
 
 if __name__ == "__main__":

@@ -70,6 +70,18 @@ async def get_debate_topics(genre: str):
     return topics
 
 
+@app.post("/register")
+async def register_player(username: str):
+    """Register a new player"""
+    try:
+        player = await player_service.create_player(username)
+        return {"message": f"Player {username} registered successfully", "player": player}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/create-room/{player_name}")
 async def create_room(player_name: str, genre: str = None):
     """Create a new debate room with optional genre-specific topic"""
@@ -186,6 +198,28 @@ async def get_room_status(room_key: str):
     if room_key not in debate_rooms:
         raise HTTPException(status_code=404, detail="Room not found")
     return debate_rooms[room_key]
+
+
+@app.post("/players/create")
+async def create_player(player_name: str):
+    """Create a new player"""
+    try:
+        # Create a new player using PlayerService
+        player = await player_service.create_player(player_name)
+        return {"message": f"Player {player_name} created successfully", "player": player}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/players/{username}")
+async def get_player(username: str):
+    """Get player details"""
+    player = await player_service.get_player(username)
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    return player
 
 if __name__ == "__main__":
     import uvicorn
