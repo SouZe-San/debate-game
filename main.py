@@ -8,6 +8,7 @@ from ai_engine import run_debate, generate_debate_topics_by_genre
 import random
 import string
 import json
+from fastapi import Query
 
 # Load environment variables
 load_dotenv()
@@ -189,7 +190,8 @@ async def get_room_status(room_key: str):
 
 
 @app.post("/players/create")
-async def create_player(player_name: str):
+async def create_player(player: dict):
+    player_name = player["player_name"]
     """Create a new player"""
     try:
         # Create a new player using PlayerService

@@ -32,7 +32,7 @@ def register_player():
 
     # Use the players/create endpoint instead
     response = requests.post(f"{BASE_URL}/players/create",
-                             params={"player_name": username})
+                             json={"player_name": username})
 
     if response.status_code == 200:
         typer.echo(f"Player {username} registered successfully!")
