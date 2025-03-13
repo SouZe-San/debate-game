@@ -59,9 +59,34 @@ def generate_room_key(length: int = 6) -> str:
 async def abort_debate(room_key: str, player_name: str):
     if room_key not in debate_rooms:
         raise HTTPException(status_code=404, detail="Room not found")
+
     room = debate_rooms[room_key]
-    room["status"] = "aborted"
-    return {"message": "Debate aborted successfully"}
+
+    # Check if player is part of the debate
+    if player_name not in [room["player1_name"], room["player2_name"]]:
+        raise HTTPException(
+            status_code=403, detail="Only debate participants can abort")
+
+    # Check if debate is in progress
+    if room["status"] != "in_progress":
+        raise HTTPException(
+            status_code=400, detail="Can only abort debates in progress")
+
+    # Apply penalty to the player who aborted
+    try:
+        # Update player's score with -30 penalty
+        player = await player_service.apply_abort_penalty(player_name)
+
+        # Update room status
+        room["status"] = "aborted"
+
+        return {
+            "message": "Debate aborted successfully",
+            "penalty_applied": -30,
+            "new_score": player.total_score
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/topics/{genre}", response_model=TopicResponse)

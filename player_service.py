@@ -44,6 +44,24 @@ class PlayerService:
         length=len(player_data)
     )
 
+    async def apply_abort_penalty(self, username: str) -> Player:
+        """
+        Apply a -30 penalty to a player's score for aborting a debate
+        """
+        player = await self.get_player(username)
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+
+        # Apply -30 penalty
+        player.total_score = max(0, player.total_score -
+                                30)  # Prevent negative scores
+        player.games_played += 1
+
+        # Save the updated player data
+        await self.save_player(player)
+
+        return player
+
     async def update_scores(self, winner: str, loser: str, winner_score: int, loser_score: int):
         winner_profile = await self.get_player(winner)
         loser_profile = await self.get_player(loser)
