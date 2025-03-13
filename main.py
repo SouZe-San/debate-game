@@ -55,6 +55,15 @@ def generate_room_key(length: int = 6) -> str:
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 
+@app.post("/abort-debate/{room_key}/{player_name}")
+async def abort_debate(room_key: str, player_name: str):
+    if room_key not in debate_rooms:
+        raise HTTPException(status_code=404, detail="Room not found")
+    room = debate_rooms[room_key]
+    room["status"] = "aborted"
+    return {"message": "Debate aborted successfully"}
+
+
 @app.get("/topics/{genre}", response_model=TopicResponse)
 async def get_debate_topics(genre: str):
     """Get three debate topics for a specific genre"""

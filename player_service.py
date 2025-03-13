@@ -3,6 +3,7 @@ from typing import Optional
 from models import Player
 from minio import Minio
 from fastapi import HTTPException
+from io import BytesIO
 
 
 class PlayerService:
@@ -32,14 +33,16 @@ class PlayerService:
         return player
 
     async def save_player(self, player: Player):
-        # Use json() method for proper serialization
-        player_data = player.json().encode('utf-8')
+        # Use model_dump_json() instead of json() for Pydantic v2
+        # And wrap the bytes in BytesIO for MinIO
+
+        player_data = player.model_dump_json().encode('utf-8')
         self.minio_client.put_object(
-            self.bucket_name,
-            f"player_{player.username}.json",
-            data=player_data,
-            length=len(player_data)
-        )
+        self.bucket_name,
+        f"player_{player.username}.json",
+        BytesIO(player_data),  # Wrap in BytesIO
+        length=len(player_data)
+    )
 
     async def update_scores(self, winner: str, loser: str, winner_score: int, loser_score: int):
         winner_profile = await self.get_player(winner)
