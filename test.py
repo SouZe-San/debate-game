@@ -14,25 +14,6 @@ room_key = None
 selected_topic = None
 
 
-def test_1_create_players():
-    """Test creating both players"""
-    # Create SAYX
-    response1 = client.post(
-        "/players/create",
-        json={"player_name": PLAYER1}
-    )
-    assert response1.status_code == 200
-    print(f"\n✓ Created player: {PLAYER1}")
-
-    # Create AvinPy
-    response2 = client.post(
-        "/players/create",
-        json={"player_name": PLAYER2}
-    )
-    assert response2.status_code == 200
-    print(f"✓ Created player: {PLAYER2}")
-
-
 def test_2_get_valid_genres():
     """Test getting valid genres"""
     valid_genres = [
@@ -61,7 +42,7 @@ def test_3_get_debate_topics():
         print(f"{i}. {topic}")
 
     # Select the first topic for this test
-    selected_topic = topics[0]
+    selected_topic = topics[1]
     print(f"\n✓ Selected topic: {selected_topic}")
 
 

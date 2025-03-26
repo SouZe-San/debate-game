@@ -9,7 +9,7 @@ import random
 import string
 import json
 from fastapi import Query
-
+from io import BytesIO
 # Load environment variables
 load_dotenv()
 
@@ -197,14 +197,13 @@ async def submit_argument(room_key: str, player_name: str, argument: Argument):
 
         await player_service.update_scores(winner, loser, winner_score, loser_score)
 
-        # Store debate result
         debate_data = json.dumps(result).encode('utf-8')
         minio_client.put_object(
-            MINIO_BUCKET,
-            f"debate_{room_key}.json",
-            data=debate_data,
-            length=len(debate_data)
-        )
+        MINIO_BUCKET,
+        f"debate_{room_key}.json",
+        BytesIO(debate_data),  # Wrap bytes in BytesIO
+        length=len(debate_data)
+    )
 
         room["status"] = "completed"
         return {"status": "completed", "result": result}
@@ -216,6 +215,32 @@ async def submit_argument(room_key: str, player_name: str, argument: Argument):
     }
 
 
+@app.post("/create-custom-room/{player_name}")
+async def create_custom_room(player_name: str, topic: str = Query(..., description="Custom debate topic")):
+    """Create a new debate room with a custom topic"""
+    # Verify player exists
+    player = await player_service.get_player(player_name)
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    # Validate topic
+    if not topic or len(topic.strip()) < 10:
+        raise HTTPException(
+            status_code=400,
+            detail="Topic must be at least 10 characters long"
+        )
+
+    room_key = generate_room_key()
+
+    room = Room(
+        room_key=room_key,
+        topic=topic.strip(),
+        player1_name=player_name,
+        arguments={player_name: []}
+    )
+
+    debate_rooms[room_key] = room.dict()
+    return {"room_key": room_key, "topic": topic}
 @app.get("/room-status/{room_key}")
 async def get_room_status(room_key: str):
     if room_key not in debate_rooms:
