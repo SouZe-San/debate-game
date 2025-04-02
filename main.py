@@ -279,7 +279,34 @@ async def submit_argument(room_key: str, player_name: str, argument: Argument):
         "round_result": round_result,
         "next_turn": room["current_turn"]
     }
-
+@app.post("/abort-debate/{room_key}/{player_name}")
+async def abort_debate(room_key: str, player_name: str):
+    """Allow a player to abort a debate with a score penalty"""
+    if room_key not in debate_rooms:
+        raise HTTPException(status_code=404, detail="Room not found")
+    
+    room = debate_rooms[room_key]
+    
+    # Check if player is part of this debate
+    if player_name != room["player1_name"] and player_name != room["player2_name"]:
+        raise HTTPException(status_code=403, detail="Player not in this debate")
+    
+    # Check if debate is in progress
+    if room["status"] != "in_progress":
+        raise HTTPException(status_code=400, detail="Debate is not in progress")
+    
+    # Apply penalty to the player who aborted
+    await player_service.apply_abort_penalty(player_name)
+    
+    # Update room status
+    room["status"] = "aborted"
+    room["aborted_by"] = player_name
+    
+    return {
+        "status": "aborted",
+        "message": f"Debate aborted by {player_name}. A 30-point penalty has been applied.",
+        "player": player_name
+    }
 # Get current room status
 @app.get("/room-status/{room_key}")
 async def get_room_status(room_key: str):
