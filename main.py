@@ -9,12 +9,22 @@ import random
 import string
 import json
 from io import BytesIO
+from fastapi.middleware.cors import CORSMiddleware
 
 # Load environment variables
 load_dotenv()
 
 # Initialize FastAPI app
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8080"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # MinIO Configuration
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
@@ -318,4 +328,4 @@ async def get_room_status(room_key: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
