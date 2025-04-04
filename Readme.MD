@@ -1,6 +1,5 @@
 The Debate Game backend is a FastAPI application that allows users to create players, generate debate topics, create/join debate rooms, submit arguments, and automatically score debates using an AI engine and MinIO-based history storage.
 
-> **Note:** This README assumes you have basic knowledge of Python, FastAPI, and working in a development environment.
 
 # Table of Contents
 
