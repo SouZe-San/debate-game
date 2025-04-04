@@ -7,6 +7,17 @@ from minio import Minio
 import re
 import random
 
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
+
+
+# MinIO Configuration
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
+
 # Load API Key from .env
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -21,11 +32,10 @@ BUCKET_NAME = "debate-history"
 # Initialize MinIO Client
 MINIO_CLIENT = Minio(
     MINIO_ENDPOINT,
-    access_key=ACCESS_KEY,
-    secret_key=SECRET_KEY,
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY,
     secure=False
 )
-
 
 def create_bucket():
     if not MINIO_CLIENT.bucket_exists(BUCKET_NAME):

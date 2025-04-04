@@ -9,18 +9,34 @@ import random
 import string
 import json
 from io import BytesIO
+import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
+
 
 # Load environment variables
 load_dotenv()
 
 # Initialize FastAPI app
-app = FastAPI()
+app = FastAPI(title="Debate API", description="API for managing debate players and rooms", version="1.0")
 
+# Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*'],
+    expose_headers=["*"],
+    max_age=36000
+)
 # MinIO Configuration
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "sayan")
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "admin123")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
 MINIO_BUCKET = "debate-history"
+
+if(MINIO_ACCESS_KEY is None or MINIO_SECRET_KEY is None):
+    raise ValueError("MINIO_ACCESS_KEY and MINIO_SECRET_KEY must be set in the environment variables.")
 
 # Valid genres for debate topics
 VALID_GENRES = [
@@ -53,6 +69,12 @@ debate_rooms: dict[str, dict] = {}
 def generate_room_key(length: int = 6) -> str:
     """Generate a random room key"""
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+#0. Health check
+@app.get("/")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "OK", "message": "Debate API is running"}
 
 # 1. Create a new player
 @app.post("/players/create")
@@ -279,6 +301,7 @@ async def submit_argument(room_key: str, player_name: str, argument: Argument):
         "round_result": round_result,
         "next_turn": room["current_turn"]
     }
+
 @app.post("/abort-debate/{room_key}/{player_name}")
 async def abort_debate(room_key: str, player_name: str):
     """Allow a player to abort a debate with a score penalty"""
@@ -307,6 +330,8 @@ async def abort_debate(room_key: str, player_name: str):
         "message": f"Debate aborted by {player_name}. A 30-point penalty has been applied.",
         "player": player_name
     }
+
+
 # Get current room status
 @app.get("/room-status/{room_key}")
 async def get_room_status(room_key: str):
@@ -317,5 +342,5 @@ async def get_room_status(room_key: str):
     return debate_rooms[room_key]
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    print("Starting FastAPI server...")
+    uvicorn.run("main:app", host="127.0.0.1", port=8000,reload=True)

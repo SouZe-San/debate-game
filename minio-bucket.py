@@ -1,21 +1,30 @@
 from minio import Minio
 import json
 import datetime
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
+
+
+# MinIO Configuration
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
 
 # MinIO Configuration
 MINIO_ENDPOINT = "localhost:9000"  # Change if MinIO is running remotely
-ACCESS_KEY = "sayan"
-SECRET_KEY = "admin123"
 BUCKET_NAME = "debate-history"
 
 # Initialize MinIO Client
 minio_client = Minio(
     MINIO_ENDPOINT,
-    access_key=ACCESS_KEY,
-    secret_key=SECRET_KEY,
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY,
     secure=False  # Set to True if using HTTPS
 )
 
+print("*********** this is From minio-bucket.py **********")
 # Ensure the bucket exists
 def create_bucket():
     if not minio_client.bucket_exists(BUCKET_NAME):
@@ -97,17 +106,20 @@ def list_bucket_contents(bucket_name=BUCKET_NAME):
 
 # Example usage
 if __name__ == "__main__":
-    create_bucket()
+    try:
+        create_bucket()
 
-    # Example arguments
-    arguments = [
-        {"player": "Debater1", "round": 1, "argument": "AI judges are more objective."},
-        {"player": "Debater2", "round": 1, "argument": "Human judges understand context better."}
-    ]
+        # Example arguments
+        arguments = [
+            {"player": "Debater1", "round": 1, "argument": "AI judges are more objective."},
+            {"player": "Debater2", "round": 1, "argument": "Human judges understand context better."}
+        ]
 
-    # Save a sample debate history
-    save_debate_history(game_id=1, player1="Debater1", player2="Debater2", topic="Should AI replace human judges?", arguments=arguments, winner="Debater1")
+        # Save a sample debate history
+        save_debate_history(game_id=1, player1="Debater1", player2="Debater2", topic="Should AI replace human judges?", arguments=arguments, winner="Debater1")
 
-    # Retrieve and print debate history
-    history = get_debate_history(1)
-    print(list_bucket_contents())
+        # Retrieve and print debate history
+        history = get_debate_history(1)
+        print(list_bucket_contents())
+    except Exception as e:
+        print(f"[ERROR] An error occurred: {str(e)}")

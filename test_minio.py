@@ -3,12 +3,21 @@ import json
 from datetime import datetime
 from models import Player  # Import the Player model
 from io import BytesIO
+from dotenv import load_dotenv
+import os
 
+# Load environment variables
+load_dotenv()
+
+
+# MinIO Configuration
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
 # Initialize MinIO client
 minio_client = Minio(
     "localhost:9000",
-    access_key="sayan",
-    secret_key="admin123",
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY,
     secure=False
 )
 
