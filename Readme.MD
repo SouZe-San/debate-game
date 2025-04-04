@@ -1,22 +1,5 @@
 The Debate Game backend is a FastAPI application that allows users to create players, generate debate topics, create/join debate rooms, submit arguments, and automatically score debates using an AI engine and MinIO-based history storage.
 
-
-# Table of Contents
-
-* [Prerequisites](https://app.greptile.com/chat/8ab54913-7cfd-40c4-8f4b-2b061f75b787#prerequisites)
-* [Installation](https://app.greptile.com/chat/8ab54913-7cfd-40c4-8f4b-2b061f75b787#installation)
-* [Configuration](https://app.greptile.com/chat/8ab54913-7cfd-40c4-8f4b-2b061f75b787#configuration)
-  * [.env Configuration](https://app.greptile.com/chat/8ab54913-7cfd-40c4-8f4b-2b061f75b787#env-configuration)
-  * [MinIO Setup](https://app.greptile.com/chat/8ab54913-7cfd-40c4-8f4b-2b061f75b787#minio-setup)
-* [Running the Server](https://app.greptile.com/chat/8ab54913-7cfd-40c4-8f4b-2b061f75b787#running-the-server)
-* [API Endpoints Overview](https://app.greptile.com/chat/8ab54913-7cfd-40c4-8f4b-2b061f75b787#api-endpoints-overview)
-* [Testing the Backend](https://app.greptile.com/chat/8ab54913-7cfd-40c4-8f4b-2b061f75b787#testing-the-backend)
-* [Additional Modules](https://app.greptile.com/chat/8ab54913-7cfd-40c4-8f4b-2b061f75b787#additional-modules)
-* [Troubleshooting](https://app.greptile.com/chat/8ab54913-7cfd-40c4-8f4b-2b061f75b787#troubleshooting)
-* [License](https://app.greptile.com/chat/8ab54913-7cfd-40c4-8f4b-2b061f75b787#license)
-
----
-
 # Prerequisites
 
 Before getting started, ensure you have the following installed on your system:
