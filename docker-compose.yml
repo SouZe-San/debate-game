@@ -1,21 +1,45 @@
 version: "3.8"
 
 services:
+  # FastAPI backend service
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: debate-game-api
+    restart: always
+    environment:
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=sayan
+      - MINIO_SECRET_KEY=admin123
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - minio
+    volumes:
+      - ./tmp:/app/tmp
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
+  # MinIO storage service
   minio:
-    image: minio/minio
-    container_name: minio-storage
+    image: minio/minio:latest
+    container_name: debate-game-minio
     restart: always
     environment:
       MINIO_ROOT_USER: sayan
-      MINIO_ROOT_PASSWORD: sayan1234
+      MINIO_ROOT_PASSWORD: admin123
     ports:
       - "9000:9000"   # MinIO API
       - "9001:9001"   # MinIO Console
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
-
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
 
 volumes:
   minio_data:
