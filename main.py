@@ -210,17 +210,6 @@ async def submit_argument(room_key: str, player_name: str, argument: Argument):
         raise HTTPException(status_code=400, detail="Not your turn")
 
     room["arguments"][player_name].append(argument.argument)
-    
-    # @souze - i dont know if this is logic is ok or not
-    # get all arguments in One Array in entry sequence {one by one , p1,p2}
-# [ {player:p1, arg:" "}, {player:p2, arg:""} ,{player:p1, arg:" "}, {player:p2, arg:""}]
-    all_arguments = []
-    for i in range(max(len(room["arguments"][room["player1_name"]]), len(room["arguments"].get(room["player2_name"], [])))):
-        if i < len(room["arguments"][room["player1_name"]]):
-            all_arguments.append({"player": room["player1_name"], "argument": room["arguments"][room["player1_name"]][i]})
-        if i < len(room["arguments"].get(room["player2_name"], [])):
-            all_arguments.append({"player": room["player2_name"], "argument": room["arguments"][room["player2_name"]][i]})
-    
   
     # Determine current round
     player1_arguments = room["arguments"][room["player1_name"]]
@@ -295,7 +284,6 @@ async def submit_argument(room_key: str, player_name: str, argument: Argument):
         "status": "in_progress",
         "current_round": current_round,
         "round_result": round_result,
-        "all_arguments": all_arguments,
         "next_turn": room["current_turn"]
     }
 
@@ -336,7 +324,19 @@ async def get_room_status(room_key: str):
     if room_key not in debate_rooms:
         raise HTTPException(status_code=404, detail="Room not found")
     
-    return debate_rooms[room_key]
+    
+    room = debate_rooms[room_key]
+    # @souze - i dont know if this is logic is ok or not
+    # get all arguments in One Array in entry sequence {one by one , p1,p2}
+# [ {player:p1, arg:" "}, {player:p2, arg:""} ,{player:p1, arg:" "}, {player:p2, arg:""}]
+    all_arguments = []
+    for i in range(max(len(room["arguments"][room["player1_name"]]), len(room["arguments"].get(room["player2_name"], [])))):
+        if i < len(room["arguments"][room["player1_name"]]):
+            all_arguments.append({"player": room["player1_name"], "argument": room["arguments"][room["player1_name"]][i]})
+        if i < len(room["arguments"].get(room["player2_name"], [])):
+            all_arguments.append({"player": room["player2_name"], "argument": room["arguments"][room["player2_name"]][i]})
+    
+    return {"room": room, "all_arguments": all_arguments}
 
 if __name__ == "__main__":
     print("Starting FastAPI server...")
