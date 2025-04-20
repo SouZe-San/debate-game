@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 load_dotenv()
 
 # Initialize FastAPI app
-app = FastAPI(title="Debate API", description="API for managing debate players and rooms", version="1.0")
+app = FastAPI(title="Debate API", description="API for managing debate players and rooms")
 
 # Middleware
 app.add_middleware(
@@ -48,7 +48,6 @@ VALID_GENRES = [
     "brainrot"
 ]
 
-# Initialize MinIO client
 minio_client = Minio(
     MINIO_ENDPOINT,
     access_key=MINIO_ACCESS_KEY,
@@ -59,11 +58,9 @@ minio_client = Minio(
 # Ensure bucket exists
 if not minio_client.bucket_exists(MINIO_BUCKET):
     minio_client.make_bucket(MINIO_BUCKET)
-
-# Initialize services
+    
 player_service = PlayerService(minio_client, MINIO_BUCKET)
 
-# In-memory storage for active debate rooms
 debate_rooms: dict[str, dict] = {}
 
 def generate_room_key(length: int = 6) -> str:
@@ -89,7 +86,7 @@ async def create_player(player: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# 2. Verify user ID
+#Verify user ID
 @app.get("/players/{username}")
 async def get_player(username: str):
     """Get player details to verify existence"""
@@ -98,23 +95,20 @@ async def get_player(username: str):
         raise HTTPException(status_code=404, detail="Player not found")
     return player
 
-# 3. Fetch past match history and rankings
+#past match history and rankings
 @app.get("/player/history/{username}")
 async def get_player_history(username: str):
     """Get player match history and ranking information"""
-    # Verify player exists
     player = await player_service.get_player(username)
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
     
-    # Get all player data for ranking
+   
     all_players = await player_service.get_all_players()
     
-    # Sort players by score for ranking
     ranked_players = sorted(all_players, key=lambda x: x.total_score, reverse=True)
     player_rank = next((i + 1 for i, p in enumerate(ranked_players) if p.username == username), None)
     
-    # Get player's debate history
     debate_history = []
     try:
         objects = minio_client.list_objects(MINIO_BUCKET, prefix="debate_", recursive=True)
@@ -123,7 +117,6 @@ async def get_player_history(username: str):
                 response = minio_client.get_object(MINIO_BUCKET, obj.object_name)
                 data = json.loads(response.read().decode('utf-8'))
                 
-                # Check if this player participated in the debate
                 if data.get("players", {}).get("player1", {}).get("name") == username or \
                    data.get("players", {}).get("player2", {}).get("name") == username:
                     debate_history.append(data)
@@ -145,7 +138,6 @@ async def get_genres():
     """Get list of available debate genres"""
     return {"genres": VALID_GENRES}
 
-# 5. Generate and select debate topics
 @app.get("/topics/{genre}", response_model=TopicResponse)
 async def get_debate_topics(genre: str):
     """Get three debate topics for a specific genre"""
@@ -158,11 +150,9 @@ async def get_debate_topics(genre: str):
     topics = generate_debate_topics_by_genre(genre)
     return topics
 
-# 6. Create room with generated key and chosen topic
 @app.post("/create-room/{player_name}")
 async def create_room(player_name: str, topic: str = Query(..., description="Selected debate topic")):
     """Create a new debate room with the selected topic"""
-    # Verify player exists
     player = await player_service.get_player(player_name)
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
@@ -181,11 +171,11 @@ async def create_room(player_name: str, topic: str = Query(..., description="Sel
     debate_rooms[room_key] = room.dict()
     return {"room_key": room_key, "topic": topic}
 
-# Route for second player to join room
+
 @app.post("/join-room/{room_key}")
 async def join_room(room_key: str, join_request: JoinRoom):
     """Join an existing debate room"""
-    # Verify player exists
+    
     player = await player_service.get_player(join_request.player_name)
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
@@ -204,7 +194,7 @@ async def join_room(room_key: str, join_request: JoinRoom):
 
     return {"message": "Joined successfully", "room": room}
 
-# 7. Submit arguments for each round
+#Submit arguments for each round
 @app.post("/submit-argument/{room_key}/{player_name}")
 async def submit_argument(room_key: str, player_name: str, argument: Argument):
     """Submit an argument for the current round"""
@@ -219,7 +209,6 @@ async def submit_argument(room_key: str, player_name: str, argument: Argument):
     if player_name != room["current_turn"]:
         raise HTTPException(status_code=400, detail="Not your turn")
 
-    # Add argument
     room["arguments"][player_name].append(argument.argument)
     
     # @souze - i dont know if this is logic is ok or not
@@ -238,7 +227,6 @@ async def submit_argument(room_key: str, player_name: str, argument: Argument):
     player2_arguments = room["arguments"].get(room["player2_name"], [])
     current_round = min(len(player1_arguments), len(player2_arguments)) + (1 if player_name == room["player1_name"] else 0)
     
-    # 8. Judge round if both players have submitted for this round
     round_result = None
     if len(player1_arguments) == len(player2_arguments):
         # Both players have submitted arguments for this round
@@ -269,9 +257,8 @@ async def submit_argument(room_key: str, player_name: str, argument: Argument):
     # Switch turns
     room["current_turn"] = room["player2_name"] if player_name == room["player1_name"] else room["player1_name"]
 
-    # 9. Check if debate is complete (5 rounds)
+    #Check if debate is complete (5 rounds)
     if len(player1_arguments) == 5 and len(player2_arguments) == 5:
-        # Debate is complete - calculate final scores
         result = run_debate(
             topic=room["topic"],
             player1_name=room["player1_name"],
@@ -281,7 +268,6 @@ async def submit_argument(room_key: str, player_name: str, argument: Argument):
             game_id=room_key
         )
 
-        # Update player scores
         winner = result["winner"]
         loser = room["player2_name"] if winner == room["player1_name"] else room["player1_name"]
         winner_score = result["players"]["player1" if winner == room["player1_name"] else "player2"]["rounds_won"]
@@ -289,7 +275,6 @@ async def submit_argument(room_key: str, player_name: str, argument: Argument):
 
         await player_service.update_scores(winner, loser, winner_score, loser_score)
 
-        # Store debate in MinIO
         debate_data = json.dumps(result).encode('utf-8')
         minio_client.put_object(
             MINIO_BUCKET,
