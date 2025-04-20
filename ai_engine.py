@@ -25,8 +25,7 @@ API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-fl
 
 # MinIO Configuration
 MINIO_ENDPOINT = "localhost:9000"
-ACCESS_KEY = "sayan"
-SECRET_KEY = "admin123"
+
 BUCKET_NAME = "debate-history"
 
 # Initialize MinIO Client
